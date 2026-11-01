@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/monthly_traffic.dart';
-import '../../models/traffic_stats.dart';
+import '../models/monthly_traffic.dart';
+import '../models/traffic_stats.dart';
 import 'services_provider.dart';
 
 final trafficStreamProvider = StreamProvider<TrafficStats>((ref) {

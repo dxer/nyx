@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/app_routing.dart';
+import '../models/app_routing.dart';
 import 'services_provider.dart';
 
 class AppRoutingNotifier extends StateNotifier<AppRoutingConfig> {

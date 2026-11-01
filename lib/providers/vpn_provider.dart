@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/connection_state.dart';
-import '../../services/singbox/config_builder.dart';
+import '../models/connection_state.dart';
+import '../services/singbox/config_builder.dart';
 import 'app_routing_provider.dart';
 import 'custom_rules_provider.dart';
 import 'nodes_provider.dart';

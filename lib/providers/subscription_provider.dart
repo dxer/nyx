@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/subscription.dart';
+import '../models/subscription.dart';
 import '../services/subscription/subscription_service.dart';
 import 'nodes_provider.dart';
 import 'services_provider.dart';

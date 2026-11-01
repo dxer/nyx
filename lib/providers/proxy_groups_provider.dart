@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/proxy_group.dart';
+import '../models/proxy_group.dart';
 import 'services_provider.dart';
 
 class ProxyGroupsNotifier extends StateNotifier<List<ProxyGroup>> {

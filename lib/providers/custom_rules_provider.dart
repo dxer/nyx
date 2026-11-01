@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/custom_rule.dart';
+import '../models/custom_rule.dart';
 import 'services_provider.dart';
 
 class CustomRulesNotifier extends StateNotifier<List<CustomRule>> {

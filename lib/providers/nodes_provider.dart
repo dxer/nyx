@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/proxy_node.dart';
+import '../models/proxy_node.dart';
 import 'services_provider.dart';
 
 class NodesNotifier extends StateNotifier<List<ProxyNode>> {
