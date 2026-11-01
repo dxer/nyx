@@ -75,4 +75,39 @@ class WindowsProxyService {
       return false;
     }
   }
+
+  /// Sets or removes Windows startup registry entry
+  static Future<bool> setLaunchOnStartup(bool enable) async {
+    if (!Platform.isWindows) return true;
+
+    try {
+      const runKey = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Run';
+      final exePath = Platform.resolvedExecutable;
+
+      if (enable) {
+        await Process.run('reg', [
+          'add',
+          runKey,
+          '/v',
+          'Nyx',
+          '/t',
+          'REG_SZ',
+          '/d',
+          '"$exePath"',
+          '/f',
+        ]);
+      } else {
+        await Process.run('reg', [
+          'delete',
+          runKey,
+          '/v',
+          'Nyx',
+          '/f',
+        ]);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

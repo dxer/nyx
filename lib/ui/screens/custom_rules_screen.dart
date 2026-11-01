@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/custom_rule.dart';
+import '../../models/rule_preset.dart';
 import '../../providers/custom_rules_provider.dart';
 import '../../providers/nodes_provider.dart';
 import '../../providers/proxy_groups_provider.dart';
@@ -27,29 +28,37 @@ class CustomRulesScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: rules.isEmpty
-          ? _buildEmptyState(context, ref)
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              itemCount: rules.length,
-              itemBuilder: (context, index) {
-                final rule = rules[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _RuleCard(
-                    rule: rule,
-                    onToggle: () {
-                      ref.read(customRulesProvider.notifier).toggleRule(rule.id);
-                      ref.read(vpnControllerProvider).reloadConfig();
-                    },
-                    onDelete: () {
-                      ref.read(customRulesProvider.notifier).removeRule(rule.id);
-                      ref.read(vpnControllerProvider).reloadConfig();
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPresetKitsBar(context, ref),
+          Expanded(
+            child: rules.isEmpty
+                ? _buildEmptyState(context, ref)
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    itemCount: rules.length,
+                    itemBuilder: (context, index) {
+                      final rule = rules[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _RuleCard(
+                          rule: rule,
+                          onToggle: () {
+                            ref.read(customRulesProvider.notifier).toggleRule(rule.id);
+                            ref.read(vpnControllerProvider).reloadConfig();
+                          },
+                          onDelete: () {
+                            ref.read(customRulesProvider.notifier).removeRule(rule.id);
+                            ref.read(vpnControllerProvider).reloadConfig();
+                          },
+                        ),
+                      );
                     },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.black,
@@ -59,6 +68,62 @@ class CustomRulesScreen extends ConsumerWidget {
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5),
         ),
         onPressed: () => _showAddRuleSheet(context, ref),
+      ),
+    );
+  }
+
+  Widget _buildPresetKitsBar(BuildContext context, WidgetRef ref) {
+    return Container(
+      height: 72,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: RulePresetKit.presets.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final kit = RulePresetKit.presets[i];
+          return GestureDetector(
+            onTap: () {
+              final rule = CustomRule(
+                id: 'rule_${DateTime.now().millisecondsSinceEpoch}',
+                name: kit.title,
+                type: kit.type,
+                values: kit.values,
+                outbound: kit.defaultOutbound,
+              );
+              _showAddRuleSheet(context, ref, rule);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfacePrimary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  Text(kit.icon, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        kit.title,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        '${kit.values.length} targets • Tap to apply',
+                        style: const TextStyle(fontSize: 10, color: AppColors.accent),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

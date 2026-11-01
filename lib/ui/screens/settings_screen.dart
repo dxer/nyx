@@ -12,6 +12,7 @@ import '../../providers/services_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../providers/traffic_provider.dart';
 import '../../providers/vpn_provider.dart';
+import '../../services/system_proxy/windows_proxy_service.dart';
 import '../components/glass_card.dart';
 import 'app_routing_screen.dart';
 import 'custom_rules_screen.dart';
@@ -31,6 +32,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late bool _allowLan;
   late bool _closeToTray;
   late bool _autoUpdateSubs;
+  late bool _launchOnStartup;
+  bool _isBatteryExempt = false;
   String _localIp = '127.0.0.1';
 
   @override
@@ -42,7 +45,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _allowLan = storage.getAllowLan();
     _closeToTray = storage.getCloseToTray();
     _autoUpdateSubs = storage.getAutoUpdateSubscriptions();
+    _launchOnStartup = storage.getLaunchOnStartup();
     _detectLocalIp();
+    _checkBatteryOptimization();
+  }
+
+  Future<void> _checkBatteryOptimization() async {
+    if (Platform.isAndroid) {
+      try {
+        const channel = MethodChannel('com.nyx.vpn/service');
+        final exempt = await channel.invokeMethod<bool>('isIgnoringBatteryOptimizations');
+        if (mounted) setState(() => _isBatteryExempt = exempt ?? false);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _requestBatteryOptimization() async {
+    if (Platform.isAndroid) {
+      try {
+        const channel = MethodChannel('com.nyx.vpn/service');
+        await channel.invokeMethod('requestIgnoreBatteryOptimizations');
+        await Future.delayed(const Duration(seconds: 1));
+        _checkBatteryOptimization();
+      } catch (_) {}
+    }
   }
 
   Future<void> _detectLocalIp() async {
@@ -351,6 +377,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       setState(() => _closeToTray = val);
                       storage.setCloseToTray(val);
                     },
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Run on Windows Startup',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: const Text(
+                      'Launch Nyx in the background when your computer boots up',
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                    activeColor: AppColors.accent,
+                    value: _launchOnStartup,
+                    onChanged: (val) {
+                      setState(() => _launchOnStartup = val);
+                      storage.setLaunchOnStartup(val);
+                      WindowsProxyService.setLaunchOnStartup(val);
+                    },
+                  ),
+                ],
+                if (Platform.isAndroid) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Background Battery Keep-Alive',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      _isBatteryExempt
+                          ? 'Unrestricted (Protected from system kill)'
+                          : 'Restricted (Tap to exempt from aggressive vendor battery saver)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _isBatteryExempt ? AppColors.connected : AppColors.connecting,
+                      ),
+                    ),
+                    trailing: Icon(
+                      _isBatteryExempt ? Icons.shield_rounded : Icons.shield_outlined,
+                      color: _isBatteryExempt ? AppColors.connected : AppColors.connecting,
+                    ),
+                    onTap: _requestBatteryOptimization,
                   ),
                 ],
               ],

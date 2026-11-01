@@ -18,6 +18,8 @@ class NodesScreen extends ConsumerStatefulWidget {
 class _NodesScreenState extends ConsumerState<NodesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _filter = '';
+  bool _hideTimeouts = false;
+  bool _isTesting = false;
 
   @override
   void dispose() {
@@ -27,22 +29,15 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
 
   void _showImportDialog() {
     final textController = TextEditingController();
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: AppColors.borderSubtle),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,21 +46,18 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'IMPORT PROXY LINK',
+                  'IMPORT PROXIES',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 TextButton.icon(
-                  icon: const Icon(Icons.paste_rounded, size: 16),
-                  label: const Text('PASTE'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.accent,
-                  ),
+                  icon: const Icon(Icons.paste_rounded, size: 16, color: AppColors.accent),
+                  label: const Text('Paste', style: TextStyle(color: AppColors.accent, fontSize: 13)),
                   onPressed: () async {
-                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
                       textController.text = data!.text!;
                     }
@@ -152,10 +144,18 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
     final selectedId = ref.watch(selectedNodeIdProvider);
     final vpnController = ref.read(vpnControllerProvider);
 
-    final filteredNodes = nodes.where((n) {
-      if (_filter.isEmpty) return true;
-      return n.name.toLowerCase().contains(_filter.toLowerCase()) ||
-          n.server.toLowerCase().contains(_filter.toLowerCase());
+    final timeoutCount = nodes.where((n) => n.latencyMs == -1).length;
+
+    var filteredNodes = nodes.where((n) {
+      if (_filter.isNotEmpty) {
+        final matches = n.name.toLowerCase().contains(_filter.toLowerCase()) ||
+            n.server.toLowerCase().contains(_filter.toLowerCase());
+        if (!matches) return false;
+      }
+      if (_hideTimeouts && n.latencyMs == -1) {
+        return false;
+      }
+      return true;
     }).toList();
 
     return Scaffold(
@@ -164,15 +164,36 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
         title: const Text('OUTBOUND NODES'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.speed_rounded, color: AppColors.textSecondary),
-            tooltip: 'Batch Ping',
+            icon: const Icon(Icons.sort_rounded, color: AppColors.textSecondary),
+            tooltip: 'Sort by Latency (Fastest First)',
             onPressed: () {
-              ref.read(nodesProvider.notifier).testAllLatencies();
+              ref.read(nodesProvider.notifier).sortByLatency();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Nodes sorted by latency (lowest first)')),
+              );
             },
           ),
           IconButton(
+            icon: _isTesting
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))
+                : const Icon(Icons.speed_rounded, color: AppColors.textSecondary),
+            tooltip: 'Batch Ping Test',
+            onPressed: _isTesting
+                ? null
+                : () async {
+                    setState(() => _isTesting = true);
+                    await ref.read(nodesProvider.notifier).testAllLatencies();
+                    if (mounted) {
+                      setState(() => _isTesting = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Batch latency test complete & auto-sorted')),
+                      );
+                    }
+                  },
+          ),
+          IconButton(
             icon: const Icon(Icons.add_rounded, color: AppColors.accent),
-            tooltip: 'Add Node',
+            tooltip: 'Import Nodes',
             onPressed: _showImportDialog,
           ),
         ],
@@ -194,82 +215,150 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tap + to import from clipboard',
+                    'Tap + to import from airport links, Base64, or Clash YAML',
                     style: TextStyle(fontSize: 13, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.surfaceHighlight,
-                      foregroundColor: AppColors.accent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Import Node'),
                     onPressed: _showImportDialog,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('IMPORT NOW', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
             )
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (val) => setState(() => _filter = val),
-                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search by node name or server...',
-                        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textMuted),
-                        filled: true,
-                        fillColor: AppColors.surfacePrimary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+          : Column(
+              children: [
+                // Filter, Hide Timeouts & Quick Stats Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) => setState(() => _filter = val.trim()),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Filter ${nodes.length} nodes...',
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                            filled: true,
+                            fillColor: AppColors.surfacePrimary,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: AppColors.borderSubtle),
+                            ),
+                          ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+                      ),
+                      const SizedBox(width: 8),
+                      // Toggle Hide Timeouts
+                      GestureDetector(
+                        onTap: () => setState(() => _hideTimeouts = !_hideTimeouts),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _hideTimeouts ? AppColors.accent.withOpacity(0.15) : AppColors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _hideTimeouts ? AppColors.accent : AppColors.borderSubtle,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _hideTimeouts ? Icons.visibility_off : Icons.visibility,
+                                size: 16,
+                                color: _hideTimeouts ? AppColors.accent : AppColors.textMuted,
+                              ),
+                              if (timeoutCount > 0) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$timeoutCount',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: _hideTimeouts ? AppColors.accent : AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.accent),
-                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Timeout Cleanup Banner
+                if (timeoutCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.borderSubtle),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _hideTimeouts
+                                ? 'Hidden $timeoutCount timeout node(s)'
+                                : 'Found $timeoutCount timeout node(s)',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                            onPressed: () {
+                              final count = ref.read(nodesProvider.notifier).removeTimeoutNodes();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Removed $count dead node(s)')),
+                              );
+                            },
+                            child: const Text('Clean All', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final node = filteredNodes[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: NodeCard(
-                            node: node,
-                            isSelected: node.id == selectedId,
-                            onTap: () {
-                              vpnController.switchNode(node.id);
-                            },
-                            onTestLatency: () {
-                              ref.read(nodesProvider.notifier).testNodeLatency(node.id);
-                            },
-                            onDelete: () {
-                              ref.read(nodesProvider.notifier).removeNode(node.id);
-                            },
-                          ),
-                        );
-                      },
-                      childCount: filteredNodes.length,
-                    ),
+
+                // Node List
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    itemCount: filteredNodes.length,
+                    itemBuilder: (context, index) {
+                      final node = filteredNodes[index];
+                      final isSelected = node.id == selectedId;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: NodeCard(
+                          node: node,
+                          isSelected: isSelected,
+                          onTap: () {
+                            vpnController.switchNode(node.id);
+                          },
+                          onPing: () {
+                            ref.read(nodesProvider.notifier).testNodeLatency(node.id);
+                          },
+                          onDelete: () {
+                            ref.read(nodesProvider.notifier).removeNode(node.id);
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

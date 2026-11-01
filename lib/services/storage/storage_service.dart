@@ -17,6 +17,7 @@ class StorageService {
   static const String _keyProxyGroups = 'setting_proxy_groups';
   static const String _keyAllowLan = 'setting_allow_lan';
   static const String _keyCloseToTray = 'setting_close_to_tray';
+  static const String _keyLaunchOnStartup = 'setting_launch_on_startup';
   static const String _keyAutoUpdateSubscriptions = 'setting_auto_update_subs';
   static const String _keyMonthlyUsedBytes = 'traffic_monthly_used_bytes';
   static const String _keyMonthlyQuotaGb = 'traffic_monthly_quota_gb';
@@ -88,6 +89,9 @@ class StorageService {
 
   bool getCloseToTray() => _prefs.getBool(_keyCloseToTray) ?? true;
   Future<bool> setCloseToTray(bool value) => _prefs.setBool(_keyCloseToTray, value);
+
+  bool getLaunchOnStartup() => _prefs.getBool(_keyLaunchOnStartup) ?? false;
+  Future<bool> setLaunchOnStartup(bool value) => _prefs.setBool(_keyLaunchOnStartup, value);
 
   bool getAutoUpdateSubscriptions() => _prefs.getBool(_keyAutoUpdateSubscriptions) ?? true;
   Future<bool> setAutoUpdateSubscriptions(bool value) => _prefs.setBool(_keyAutoUpdateSubscriptions, value);

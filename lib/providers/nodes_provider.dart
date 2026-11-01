@@ -11,8 +11,7 @@ class NodesNotifier extends StateNotifier<List<ProxyNode>> {
     if (state.any((n) => n.id == node.id)) return;
     state = [...state, node];
     _ref.read(storageServiceProvider).saveNodes(state);
-    
-    // Select first node if none selected
+
     final currentSelected = _ref.read(selectedNodeIdProvider);
     if (currentSelected == null) {
       _ref.read(selectedNodeIdProvider.notifier).select(node.id);
@@ -21,7 +20,7 @@ class NodesNotifier extends StateNotifier<List<ProxyNode>> {
 
   void addNodes(List<ProxyNode> nodes) {
     final existingIds = state.map((n) => n.id).toSet();
-    final newNodes = nodes.filter((n) => !existingIds.contains(n.id)).toList();
+    final newNodes = nodes.where((n) => !existingIds.contains(n.id)).toList();
     if (newNodes.isEmpty) return;
 
     state = [...state, ...newNodes];
@@ -44,6 +43,46 @@ class NodesNotifier extends StateNotifier<List<ProxyNode>> {
     }
   }
 
+  int removeTimeoutNodes() {
+    final before = state.length;
+    state = state.where((n) => n.latencyMs != -1).toList();
+    final removed = before - state.length;
+    if (removed > 0) {
+      _ref.read(storageServiceProvider).saveNodes(state);
+      final currentSelected = _ref.read(selectedNodeIdProvider);
+      if (currentSelected != null && !state.any((n) => n.id == currentSelected)) {
+        final next = state.isNotEmpty ? state.first.id : null;
+        _ref.read(selectedNodeIdProvider.notifier).select(next);
+      }
+    }
+    return removed;
+  }
+
+  void sortByLatency() {
+    final sorted = List<ProxyNode>.from(state);
+    sorted.sort((a, b) {
+      final latA = a.latencyMs;
+      final latB = b.latencyMs;
+
+      // Both valid positive latencies
+      if (latA != null && latA > 0 && latB != null && latB > 0) {
+        return latA.compareTo(latB);
+      }
+      // A is valid, B is not
+      if (latA != null && latA > 0) return -1;
+      if (latB != null && latB > 0) return 1;
+
+      // Untested (null) before failed (-1)
+      if (latA == null && latB == -1) return -1;
+      if (latB == null && latA == -1) return 1;
+
+      return a.name.compareTo(b.name);
+    });
+
+    state = sorted;
+    _ref.read(storageServiceProvider).saveNodes(state);
+  }
+
   Future<void> testNodeLatency(String id) async {
     final node = state.firstWhere((n) => n.id == id, orElse: () => throw Exception('Not found'));
     final singbox = _ref.read(singBoxServiceProvider);
@@ -57,14 +96,19 @@ class NodesNotifier extends StateNotifier<List<ProxyNode>> {
   }
 
   Future<void> testAllLatencies() async {
-    for (final node in state) {
-      await testNodeLatency(node.id);
-    }
-  }
-}
+    // Concurrent batch testing (5 parallel queries at a time)
+    final nodesToTest = List<ProxyNode>.from(state);
+    const batchSize = 5;
 
-extension _IterableFilter<T> on Iterable<T> {
-  Iterable<T> filter(bool Function(T element) test) => where(test);
+    for (var i = 0; i < nodesToTest.length; i += batchSize) {
+      final end = (i + batchSize < nodesToTest.length) ? i + batchSize : nodesToTest.length;
+      final batch = nodesToTest.sublist(i, end);
+      await Future.wait(batch.map((n) => testNodeLatency(n.id)));
+    }
+
+    // Auto sort after full test
+    sortByLatency();
+  }
 }
 
 final nodesProvider = StateNotifierProvider<NodesNotifier, List<ProxyNode>>((ref) {
