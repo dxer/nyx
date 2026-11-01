@@ -20,6 +20,9 @@ void AddTrayIcon(HWND hwnd) {
   g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
   g_nid.uCallbackMessage = WM_TRAYICON;
   g_nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APP_ICON));
+  if (!g_nid.hIcon) {
+    g_nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+  }
   wcscpy_s(g_nid.szTip, L"Nyx - Silent speed in pure darkness");
   Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
@@ -49,6 +52,9 @@ class WindowClassRegistrar {
       window_class.cbWndExtra = 0;
       window_class.hInstance = GetModuleHandle(nullptr);
       window_class.hIcon = LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
+      if (!window_class.hIcon) {
+        window_class.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+      }
       window_class.hbrBackground = 0;
       window_class.lpfnWndProc = Win32Window::WndProc;
       RegisterClass(&window_class);

@@ -3,7 +3,13 @@ name: Build Releases (Android & Windows)
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-android:
@@ -38,6 +44,14 @@ jobs:
           name: Nyx-Android-APKs
           path: build/app/outputs/flutter-apk/*.apk
 
+      - name: Release APK Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-windows:
     name: Build Windows Release Binary
     runs-on: windows-latest
@@ -71,3 +85,11 @@ jobs:
         with:
           name: Nyx-Windows-x64
           path: Nyx-Windows-x64.zip
+
+      - name: Release Windows Binary
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Nyx-Windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
