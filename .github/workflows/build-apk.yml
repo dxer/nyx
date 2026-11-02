@@ -67,6 +67,15 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
+      - name: Scaffold Windows Build Files
+        shell: pwsh
+        run: |
+          Copy-Item windows\runner\win32_window.cpp -Destination win32_window.cpp.bak
+          Copy-Item windows\runner\win32_window.h -Destination win32_window.h.bak
+          flutter create . --platforms=windows --org com.nyx.vpn
+          Move-Item -Force win32_window.cpp.bak windows\runner\win32_window.cpp
+          Move-Item -Force win32_window.h.bak windows\runner\win32_window.h
+
       - name: Install Dependencies
         run: flutter pub get
 
