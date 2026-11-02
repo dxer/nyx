@@ -78,7 +78,14 @@ jobs:
       - name: Compress Windows Artifacts
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath Nyx-Windows-x64.zip
+          if (Test-Path "build\windows\x64\runner\Release") {
+            Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath Nyx-Windows-x64.zip
+          } elseif (Test-Path "build\windows\runner\Release") {
+            Compress-Archive -Path build\windows\runner\Release\* -DestinationPath Nyx-Windows-x64.zip
+          } else {
+            Get-ChildItem -Recurse build\windows\
+            throw "Could not locate Windows Release build directory"
+          }
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
