@@ -33,6 +33,9 @@ class Win32Window {
   void SetQuitOnClose(bool quit_on_close);
   RECT GetClientArea() const;
 
+  // Sets the window's child content to the given window.
+  void SetChildContent(HWND content);
+
   static LRESULT CALLBACK WndProc(HWND const window,
                                   UINT const message,
                                   WPARAM const wparam,
@@ -50,6 +53,7 @@ class Win32Window {
   friend class WindowClassRegistrar;
 
   HWND window_handle_ = nullptr;
+  HWND child_content_ = nullptr;
   bool quit_on_close_ = false;
 };
 

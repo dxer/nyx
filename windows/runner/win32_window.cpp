@@ -136,6 +136,15 @@ RECT Win32Window::GetClientArea() const {
   return frame;
 }
 
+void Win32Window::SetChildContent(HWND content) {
+  child_content_ = content;
+  SetParent(content, window_handle_);
+  RECT frame = GetClientArea();
+  MoveWindow(content, frame.left, frame.top, frame.right - frame.left,
+             frame.bottom - frame.top, TRUE);
+  SetFocus(content);
+}
+
 LRESULT CALLBACK Win32Window::WndProc(HWND const window,
                                       UINT const message,
                                       WPARAM const wparam,
@@ -163,6 +172,15 @@ LRESULT Win32Window::MessageHandler(HWND hwnd,
       // Minimize to system tray on close instead of exiting
       ShowWindow(hwnd, SW_HIDE);
       return 0;
+
+    case WM_SIZE: {
+      RECT rect = GetClientArea();
+      if (child_content_ != nullptr) {
+        MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
+                   rect.bottom - rect.top, TRUE);
+      }
+      return 0;
+    }
 
     case WM_TRAYICON:
       if (lparam == WM_LBUTTONDBLCLK || lparam == WM_LBUTTONUP) {
