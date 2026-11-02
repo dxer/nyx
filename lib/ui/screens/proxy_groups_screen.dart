@@ -553,7 +553,7 @@ class _GroupEditorSheetState extends ConsumerState<_GroupEditorSheet> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        '${node.protocol.toUpperCase()} • ${node.address}:${node.port}',
+                        '${node.protocol.toUpperCase()} • ${node.server}:${node.port}',
                         style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                       ),
                       value: isChecked,

@@ -350,7 +350,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                           onTap: () {
                             vpnController.switchNode(node.id);
                           },
-                          onPing: () {
+                          onTestLatency: () {
                             ref.read(nodesProvider.notifier).testNodeLatency(node.id);
                           },
                           onDelete: () {

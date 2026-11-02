@@ -582,7 +582,7 @@ class _RuleEditorSheetState extends ConsumerState<_RuleEditorSheet> {
                         return DropdownMenuItem<String?>(
                           value: n.name.isNotEmpty ? n.name : n.id,
                           child: Text(
-                            '🎯 ${n.name} (${n.protocol.toUpperCase()} • ${n.address})',
+                            '🎯 ${n.name} (${n.protocol.toUpperCase()} • ${n.server})',
                             style: const TextStyle(fontSize: 13, color: AppColors.connected),
                             overflow: TextOverflow.ellipsis,
                           ),
