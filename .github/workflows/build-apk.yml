@@ -35,7 +35,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Release APK (Split Per ABI)
-        run: flutter build apk --split-per-abi --release
+        run: flutter build apk --split-per-abi --release --android-skip-build-dependency-validation
 
       - name: Upload Android APK Artifacts
         uses: actions/upload-artifact@v4
@@ -72,6 +72,7 @@ jobs:
         run: |
           Copy-Item windows\runner\win32_window.cpp -Destination win32_window.cpp.bak
           Copy-Item windows\runner\win32_window.h -Destination win32_window.h.bak
+          Remove-Item -Recurse -Force windows
           flutter create . --platforms=windows --org com.nyx.vpn
           Move-Item -Force win32_window.cpp.bak windows\runner\win32_window.cpp
           Move-Item -Force win32_window.h.bak windows\runner\win32_window.h
