@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../providers/nodes_provider.dart';
@@ -122,9 +123,9 @@ class DashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'ACTIVE OUTBOUND',
-                            style: TextStyle(
+                          Text(
+                            context.tr.activeNode.toUpperCase(),
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textMuted,
@@ -133,7 +134,7 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            activeNode?.name ?? 'No Node Selected',
+                            activeNode?.name ?? context.tr.noActiveNode,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

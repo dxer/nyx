@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/custom_rule.dart';
 import '../../models/rule_preset.dart';
@@ -19,7 +20,7 @@ class CustomRulesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('CUSTOM RULES'),
+        title: Text(context.tr.customRulesTitle.toUpperCase()),
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: AppColors.accent),

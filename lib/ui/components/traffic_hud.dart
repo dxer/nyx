@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/monthly_traffic.dart';
@@ -31,7 +32,7 @@ class TrafficHud extends StatelessWidget {
                 child: _buildMetric(
                   icon: Icons.arrow_downward_rounded,
                   iconColor: AppColors.connected,
-                  label: 'DOWNLINK',
+                  label: context.tr.downlink,
                   speed: Formatters.formatSpeed(stats.downlinkSpeed),
                   total: Formatters.formatBytes(stats.downlinkTotal),
                 ),
@@ -45,7 +46,7 @@ class TrafficHud extends StatelessWidget {
                 child: _buildMetric(
                   icon: Icons.arrow_upward_rounded,
                   iconColor: AppColors.accent,
-                  label: 'UPLINK',
+                  label: context.tr.uplink,
                   speed: Formatters.formatSpeed(stats.uplinkSpeed),
                   total: Formatters.formatBytes(stats.uplinkTotal),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/proxy_node.dart';
 import '../../providers/nodes_provider.dart';
@@ -29,6 +30,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
 
   void _showImportDialog() {
     final textController = TextEditingController();
+    final tr = context.tr;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -45,9 +47,9 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'IMPORT PROXIES',
-                  style: TextStyle(
+                Text(
+                  tr.importNodes.toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
@@ -55,7 +57,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.paste_rounded, size: 16, color: AppColors.accent),
-                  label: const Text('Paste', style: TextStyle(color: AppColors.accent, fontSize: 13)),
+                  label: Text(tr.isZh ? '粘贴' : 'Paste', style: const TextStyle(color: AppColors.accent, fontSize: 13)),
                   onPressed: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -71,7 +73,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
               maxLines: 4,
               style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Paste links, Base64 airport subscription, or Clash YAML...',
+                hintText: tr.enterNodeOrSub,
                 hintStyle: const TextStyle(color: AppColors.textMuted),
                 filled: true,
                 fillColor: AppColors.surfaceSecondary,
@@ -112,23 +114,25 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                         SnackBar(
                           backgroundColor: AppColors.surfaceElevated,
                           content: Text(
-                            'Successfully imported ${parsed.length} node(s)',
+                            '${tr.importSuccess}: ${parsed.length}',
                             style: const TextStyle(color: AppColors.connected, fontWeight: FontWeight.w600),
                           ),
                         ),
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No valid proxy nodes detected. Please check your links, base64 subscription, or Clash YAML.'),
+                        SnackBar(
+                          content: Text(tr.isZh
+                              ? '未识别到有效代理节点，请检查链接、Base64或Clash配置'
+                              : 'No valid proxy nodes detected. Please check your links, base64 subscription, or Clash YAML.'),
                         ),
                       );
                     }
                   }
                 },
-                child: const Text(
-                  'CONFIRM IMPORT',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                child: Text(
+                  tr.importBtn.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -140,6 +144,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = context.tr;
     final nodes = ref.watch(nodesProvider);
     final selectedId = ref.watch(selectedNodeIdProvider);
     final vpnController = ref.read(vpnControllerProvider);
@@ -161,15 +166,15 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('OUTBOUND NODES'),
+        title: Text(tr.nodesTitle.toUpperCase()),
         actions: [
           IconButton(
             icon: const Icon(Icons.sort_rounded, color: AppColors.textSecondary),
-            tooltip: 'Sort by Latency (Fastest First)',
+            tooltip: tr.sortByPing,
             onPressed: () {
               ref.read(nodesProvider.notifier).sortByLatency();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Nodes sorted by latency (lowest first)')),
+                SnackBar(content: Text(tr.isZh ? '已按延迟由低到高排序' : 'Nodes sorted by latency (lowest first)')),
               );
             },
           ),
@@ -177,7 +182,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
             icon: _isTesting
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))
                 : const Icon(Icons.speed_rounded, color: AppColors.textSecondary),
-            tooltip: 'Batch Ping Test',
+            tooltip: tr.testAll,
             onPressed: _isTesting
                 ? null
                 : () async {
@@ -186,14 +191,14 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                     if (mounted) {
                       setState(() => _isTesting = false);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Batch latency test complete & auto-sorted')),
+                        SnackBar(content: Text(tr.isZh ? '全部节点测速完成并已排序' : 'Batch latency test complete & auto-sorted')),
                       );
                     }
                   },
           ),
           IconButton(
             icon: const Icon(Icons.add_rounded, color: AppColors.accent),
-            tooltip: 'Import Nodes',
+            tooltip: tr.addNode,
             onPressed: _showImportDialog,
           ),
         ],
@@ -205,18 +210,18 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                 children: [
                   const Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.textMuted),
                   const SizedBox(height: 16),
-                  const Text(
-                    'No Nodes Available',
-                    style: TextStyle(
+                  Text(
+                    tr.noNodesFound,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Tap + to import from airport links, Base64, or Clash YAML',
-                    style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  Text(
+                    tr.noNodesFoundDesc,
+                    style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
@@ -228,7 +233,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                     ),
                     onPressed: _showImportDialog,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('IMPORT NOW', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: Text(tr.importBtn.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -246,7 +251,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                           onChanged: (val) => setState(() => _filter = val.trim()),
                           style: const TextStyle(fontSize: 13),
                           decoration: InputDecoration(
-                            hintText: 'Filter ${nodes.length} nodes...',
+                            hintText: tr.searchNodes,
                             hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                             prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
                             filled: true,
@@ -314,8 +319,8 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                         children: [
                           Text(
                             _hideTimeouts
-                                ? 'Hidden $timeoutCount timeout node(s)'
-                                : 'Found $timeoutCount timeout node(s)',
+                                ? (tr.isZh ? '已隐藏 $timeoutCount 个超时节点' : 'Hidden $timeoutCount timeout node(s)')
+                                : (tr.isZh ? '检测到 $timeoutCount 个超时不可用节点' : 'Found $timeoutCount timeout node(s)'),
                             style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
                           TextButton(
@@ -323,10 +328,10 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                             onPressed: () {
                               final count = ref.read(nodesProvider.notifier).removeTimeoutNodes();
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Removed $count dead node(s)')),
+                                SnackBar(content: Text(tr.isZh ? '已清理 $count 个不可用节点' : 'Removed $count dead node(s)')),
                               );
                             },
-                            child: const Text('Clean All', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                            child: Text(tr.oneClickClean, style: const TextStyle(color: AppColors.error, fontSize: 12)),
                           ),
                         ],
                       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/app_routing.dart';
 import '../../providers/app_routing_provider.dart';
@@ -33,7 +34,7 @@ class _AppRoutingScreenState extends ConsumerState<AppRoutingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('APP ROUTING'),
+        title: Text(context.tr.appRoutingTitle.toUpperCase()),
       ),
       body: Column(
         children: [

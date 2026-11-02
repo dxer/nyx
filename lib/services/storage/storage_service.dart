@@ -22,6 +22,7 @@ class StorageService {
   static const String _keyMonthlyUsedBytes = 'traffic_monthly_used_bytes';
   static const String _keyMonthlyQuotaGb = 'traffic_monthly_quota_gb';
   static const String _keyMonthlyPeriod = 'traffic_monthly_period';
+  static const String _keyAppLanguage = 'setting_app_language'; // 'system', 'zh', 'en'
 
   final SharedPreferences _prefs;
 
@@ -153,5 +154,14 @@ class StorageService {
   Future<bool> saveProxyGroups(List<ProxyGroup> groups) async {
     final jsonList = groups.map((g) => jsonEncode(g.toJson())).toList();
     return await _prefs.setStringList(_keyProxyGroups, jsonList);
+  }
+
+  // Language
+  String loadAppLanguage() {
+    return _prefs.getString(_keyAppLanguage) ?? 'system';
+  }
+
+  Future<bool> saveAppLanguage(String language) async {
+    return await _prefs.setString(_keyAppLanguage, language);
   }
 }

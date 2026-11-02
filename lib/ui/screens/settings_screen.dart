@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/app_routing.dart';
 import '../../providers/app_routing_provider.dart';
 import '../../providers/custom_rules_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/proxy_groups_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/subscription_provider.dart';
@@ -94,8 +96,108 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showLanguageModal(BuildContext context) {
+    final tr = context.tr;
+    final currentCode = ref.read(localeProvider.notifier).currentLanguageCode;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surfacePrimary,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.language_rounded, color: AppColors.accent, size: 22),
+                    const SizedBox(width: 10),
+                    Text(
+                      tr.languageTitle,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildLanguageOption(
+                  ctx,
+                  title: tr.languageSystem,
+                  subtitle: tr.isZh ? '跟随系统语言设置' : 'Auto-match system language',
+                  code: 'system',
+                  isSelected: currentCode == 'system',
+                ),
+                const Divider(height: 1),
+                _buildLanguageOption(
+                  ctx,
+                  title: '简体中文',
+                  subtitle: 'Chinese (Simplified)',
+                  code: 'zh',
+                  isSelected: currentCode == 'zh',
+                ),
+                const Divider(height: 1),
+                _buildLanguageOption(
+                  ctx,
+                  title: 'English',
+                  subtitle: 'English (US)',
+                  code: 'en',
+                  isSelected: currentCode == 'en',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext ctx, {
+    required String title,
+    required String subtitle,
+    required String code,
+    required bool isSelected,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: isSelected ? AppColors.accent : AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle_rounded, color: AppColors.accent, size: 22)
+          : null,
+      onTap: () {
+        ref.read(localeProvider.notifier).setLanguage(code);
+        Navigator.pop(ctx);
+      },
+    );
+  }
+
+  String _getLanguageSubtitle(String code, AppLocalizations tr) {
+    if (code == 'zh') return tr.languageZh;
+    if (code == 'en') return tr.languageEn;
+    return tr.languageSystem;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tr = context.tr;
+    final currentLangCode = ref.watch(localeProvider.notifier).currentLanguageCode;
     final storage = ref.read(storageServiceProvider);
     final appRouting = ref.watch(appRoutingProvider);
     final customRules = ref.watch(customRulesProvider);
@@ -106,12 +208,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('PREFERENCES'),
+        title: Text(tr.settingsTitle.toUpperCase()),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
-          _buildSectionHeader('TRAFFIC ROUTING & SPLIT-TUNNELING'),
+          _buildSectionHeader(tr.generalSection.toUpperCase()),
+          GlassCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              children: [
+                _NavigationTile(
+                  icon: Icons.language_rounded,
+                  iconColor: AppColors.accent,
+                  title: tr.languageTitle,
+                  subtitle: _getLanguageSubtitle(currentLangCode, tr),
+                  onTap: () => _showLanguageModal(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          _buildSectionHeader(tr.routingSection.toUpperCase()),
           GlassCard(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(
@@ -119,7 +238,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _NavigationTile(
                   icon: Icons.apps_rounded,
                   iconColor: AppColors.accent,
-                  title: 'App Split Tunneling',
+                  title: tr.appRoutingTitle,
                   subtitle: _formatAppRoutingSubtitle(appRouting),
                   onTap: () {
                     Navigator.of(context).push(
@@ -131,8 +250,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _NavigationTile(
                   icon: Icons.alt_route_rounded,
                   iconColor: AppColors.connected,
-                  title: 'Custom Routing Rules',
-                  subtitle: '${customRules.length} rules (App, Domain, Prefix to Nodes)',
+                  title: tr.customRulesTitle,
+                  subtitle: '${customRules.length} ${tr.isZh ? "条规则 (应用/域名/前缀定向路由)" : "rules (App, Domain, Prefix to Nodes)"}',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const CustomRulesScreen()),
@@ -143,8 +262,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _NavigationTile(
                   icon: Icons.account_tree_rounded,
                   iconColor: AppColors.connecting,
-                  title: 'Custom Proxy Groups',
-                  subtitle: '${proxyGroups.length} groups (Auto-Test, Selector, Fallback)',
+                  title: tr.proxyGroupsTitle,
+                  subtitle: '${proxyGroups.length} ${tr.isZh ? "个分组 (自动优选/手动选择/故障转移)" : "groups (Auto-Test, Selector, Fallback)"}',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ProxyGroupsScreen()),
@@ -155,8 +274,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _NavigationTile(
                   icon: Icons.cloud_sync_rounded,
                   iconColor: AppColors.accent,
-                  title: 'Airport Subscriptions',
-                  subtitle: '${subscriptions.length} subscriptions (Auto-silent sync daily)',
+                  title: tr.subscriptionsTitle,
+                  subtitle: '${subscriptions.length} ${tr.isZh ? "个订阅 (支持静默自动同步)" : "subscriptions (Auto-silent sync daily)"}',
                   onTap: () => _showSubscriptionsModal(context),
                 ),
               ],
@@ -164,7 +283,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          _buildSectionHeader('LAN SHARING & NETWORK ACCELERATION'),
+          _buildSectionHeader(tr.networkSection.toUpperCase()),
           GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
@@ -172,13 +291,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Share Proxy with Local Network (LAN)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  title: Text(
+                    tr.lanSharingTitle,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text(
-                    'Allows Switch, PS5, TV, and iPad on local Wi-Fi to use proxy',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  subtitle: Text(
+                    tr.lanSharingSubtitle,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                   activeColor: AppColors.accent,
                   value: _allowLan,
@@ -221,7 +340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: '$_localIp:2080'));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Copied $_localIp:2080 to clipboard')),
+                              SnackBar(content: Text('${tr.ipCopied}: $_localIp:2080')),
                             );
                           },
                         ),
@@ -240,7 +359,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          _buildSectionHeader('MONTHLY TRAFFIC BUDGET'),
+          _buildSectionHeader(tr.monthlyTrafficTitle.toUpperCase()),
           GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
@@ -252,12 +371,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${monthly.period} Usage: ${Formatters.formatBytes(monthly.usedBytes)}',
+                          '${monthly.period} ${tr.monthlyUsage}: ${Formatters.formatBytes(monthly.usedBytes)}',
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          monthly.hasQuota ? 'Limit: ${monthly.quotaGigabytes} GB / month' : 'No monthly limit set',
+                          monthly.hasQuota ? '${tr.isZh ? "限额" : "Limit"}: ${monthly.quotaGigabytes} GB / ${tr.isZh ? "月" : "month"}' : tr.unlimited,
                           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                         ),
                       ],
@@ -266,12 +385,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       value: monthly.quotaGigabytes,
                       dropdownColor: AppColors.surfaceElevated,
                       underline: const SizedBox(),
-                      items: const [
-                        DropdownMenuItem(value: 0, child: Text('Unlimited', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 50, child: Text('50 GB', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 100, child: Text('100 GB', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 200, child: Text('200 GB', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 500, child: Text('500 GB', style: TextStyle(fontSize: 13))),
+                      items: [
+                        DropdownMenuItem(value: 0, child: Text(tr.unlimited, style: const TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 50, child: Text('50 GB', style: TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 100, child: Text('100 GB', style: TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 200, child: Text('200 GB', style: TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 500, child: Text('500 GB', style: TextStyle(fontSize: 13))),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -300,20 +419,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          _buildSectionHeader('GLOBAL BEHAVIOR & AUTOMATION'),
+          _buildSectionHeader(tr.platformSection.toUpperCase()),
           GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Bypass Mainland China',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  title: Text(
+                    tr.isZh ? '绕过大陆局域网及域名' : 'Bypass Mainland China',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text(
-                    'Route domestic websites & private IPs directly',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  subtitle: Text(
+                    tr.isZh ? '国内网站与私有 IP 直连，降低延迟并节省节点流量' : 'Route domestic websites & private IPs directly',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                   activeColor: AppColors.accent,
                   value: _bypassChina,
@@ -326,13 +445,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Divider(height: 1),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Auto-Connect on Launch',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  title: Text(
+                    tr.isZh ? '启动应用时自动连接' : 'Auto-Connect on Launch',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text(
-                    'Start proxy tunnel immediately when app opens',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  subtitle: Text(
+                    tr.isZh ? '打开应用后自动激活上次使用的代理节点' : 'Start proxy tunnel immediately when app opens',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                   activeColor: AppColors.accent,
                   value: _autoConnect,
@@ -344,13 +463,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Divider(height: 1),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Auto-Sync Subscriptions Daily',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  title: Text(
+                    tr.isZh ? '订阅每日静默自动同步' : 'Auto-Sync Subscriptions Daily',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-                  subtitle: const Text(
-                    'Silently refresh airport nodes every 24 hours',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  subtitle: Text(
+                    tr.isZh ? '每 24 小时在后台自动拉取更新机场节点列表' : 'Silently refresh airport nodes every 24 hours',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                   activeColor: AppColors.accent,
                   value: _autoUpdateSubs,
@@ -363,13 +482,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Close Window to System Tray',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    title: Text(
+                      tr.isZh ? '关闭窗口时最小化到系统托盘' : 'Close Window to System Tray',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
-                    subtitle: const Text(
-                      'Keep Nyx running in the Windows taskbar tray when clicking X',
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    subtitle: Text(
+                      tr.isZh ? '点击关闭按钮时隐藏到右下角通知区域，不中断代理' : 'Keep Nyx running in the Windows taskbar tray when clicking X',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     activeColor: AppColors.accent,
                     value: _closeToTray,
@@ -381,13 +500,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Run on Windows Startup',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    title: Text(
+                      tr.winStartupTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
-                    subtitle: const Text(
-                      'Launch Nyx in the background when your computer boots up',
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    subtitle: Text(
+                      tr.winStartupSubtitle,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     activeColor: AppColors.accent,
                     value: _launchOnStartup,
@@ -402,14 +521,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const Divider(height: 1),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Background Battery Keep-Alive',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    title: Text(
+                      tr.batteryOptTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
                       _isBatteryExempt
-                          ? 'Unrestricted (Protected from system kill)'
-                          : 'Restricted (Tap to exempt from aggressive vendor battery saver)',
+                          ? (tr.isZh ? '已获得后台长驻保护（系统不会杀进程）' : 'Unrestricted (Protected from system kill)')
+                          : (tr.isZh ? '受限（点击加入白名单，避免息屏断连）' : 'Restricted (Tap to exempt from vendor battery saver)'),
                       style: TextStyle(
                         fontSize: 12,
                         color: _isBatteryExempt ? AppColors.connected : AppColors.connecting,

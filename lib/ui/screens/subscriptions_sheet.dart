@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/subscription.dart';
 import '../../providers/subscription_provider.dart';
@@ -18,13 +19,14 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
   void _showAddSubscriptionDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final urlCtrl = TextEditingController();
+    final tr = context.tr;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surfaceElevated,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('ADD SUBSCRIPTION', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        title: Text(tr.addSubscription.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -32,7 +34,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
               controller: nameCtrl,
               style: const TextStyle(fontSize: 13),
               decoration: InputDecoration(
-                hintText: 'Subscription Name (e.g. My Fast Airport)',
+                hintText: tr.subNameHint,
                 hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 filled: true,
                 fillColor: AppColors.surfaceSecondary,
@@ -45,7 +47,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
               maxLines: 2,
               style: const TextStyle(fontSize: 12),
               decoration: InputDecoration(
-                hintText: 'Subscription URL (https://...)',
+                hintText: tr.subUrlHint,
                 hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 filled: true,
                 fillColor: AppColors.surfaceSecondary,
@@ -57,7 +59,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: Text(tr.cancelBtn, style: const TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -74,12 +76,12 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                 setState(() => _isSyncing = false);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Subscription added. Imported $count node(s).')),
+                    SnackBar(content: Text(tr.isZh ? '订阅添加成功，已导入 $count 个节点' : 'Subscription added. Imported $count node(s).')),
                   );
                 }
               }
             },
-            child: const Text('Save & Fetch'),
+            child: Text(tr.saveAndFetch),
           ),
         ],
       ),
@@ -88,6 +90,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = context.tr;
     final subscriptions = ref.watch(subscriptionsProvider);
 
     return Container(
@@ -103,9 +106,9 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'AIRPORT SUBSCRIPTIONS',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              Text(
+                tr.subscriptionsSheetTitle,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               Row(
                 children: [
@@ -113,7 +116,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                     icon: _isSyncing
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))
                         : const Icon(Icons.sync_rounded, color: AppColors.accent),
-                    tooltip: 'Sync All Subscriptions',
+                    tooltip: tr.syncAll,
                     onPressed: _isSyncing
                         ? null
                         : () async {
@@ -122,14 +125,14 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                             setState(() => _isSyncing = false);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('All subscriptions synchronized')),
+                                SnackBar(content: Text(tr.syncSuccess)),
                               );
                             }
                           },
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.accent),
-                    tooltip: 'Add Subscription',
+                    tooltip: tr.addSubscription,
                     onPressed: () => _showAddSubscriptionDialog(context),
                   ),
                 ],
@@ -137,9 +140,9 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Node links are automatically synchronized and updated in the background.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            tr.subscriptionsSheetDesc,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 16),
           if (subscriptions.isEmpty)
@@ -150,7 +153,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                   children: [
                     const Icon(Icons.link_off_rounded, size: 48, color: AppColors.textMuted),
                     const SizedBox(height: 8),
-                    const Text('No Subscriptions Added', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                    Text(tr.noSubscriptions, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
@@ -159,7 +162,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                       ),
                       onPressed: () => _showAddSubscriptionDialog(context),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Add Airport URL'),
+                      label: Text(tr.addSubscription),
                     ),
                   ],
                 ),
@@ -187,7 +190,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                               Text(sub.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                               const SizedBox(height: 2),
                               Text(
-                                '${sub.nodeCount} nodes • ${sub.lastUpdated != null ? "Updated ${_formatTime(sub.lastUpdated!)}" : "Pending sync"}',
+                                '${sub.nodeCount} ${tr.isZh ? "个节点" : "nodes"} • ${sub.lastUpdated != null ? "${tr.updatedAt} ${_formatTime(sub.lastUpdated!)}" : tr.pendingSync}',
                                 style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
                               ),
                             ],
@@ -199,7 +202,7 @@ class _SubscriptionsSheetState extends ConsumerState<SubscriptionsSheet> {
                             final n = await ref.read(subscriptionsProvider.notifier).syncSubscription(sub.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Updated ${sub.name}: $n nodes')),
+                                SnackBar(content: Text(tr.isZh ? '已同步 ${sub.name}: $n 个节点' : 'Updated ${sub.name}: $n nodes')),
                               );
                             }
                           },

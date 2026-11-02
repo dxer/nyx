@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/connection_state.dart';
 
@@ -85,6 +86,20 @@ class _OledPowerButtonState extends State<OledPowerButton>
     }
   }
 
+  String _getStatusLabel(BuildContext context) {
+    final tr = context.tr;
+    switch (widget.status) {
+      case VpnConnectionStatus.connected:
+        return tr.vpnConnected.toUpperCase();
+      case VpnConnectionStatus.connecting:
+        return tr.vpnConnecting.toUpperCase();
+      case VpnConnectionStatus.disconnecting:
+        return tr.vpnDisconnecting.toUpperCase();
+      case VpnConnectionStatus.disconnected:
+        return tr.vpnDisconnected.toUpperCase();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const double size = 180;
@@ -157,17 +172,11 @@ class _OledPowerButtonState extends State<OledPowerButton>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.status.isConnected
-                          ? 'CONNECTED'
-                          : (widget.status.isConnecting
-                              ? 'CONNECTING'
-                              : (widget.status == VpnConnectionStatus.disconnecting
-                                  ? 'DISCONNECTING'
-                                  : 'DISCONNECTED')),
+                      _getStatusLabel(context),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.2,
                         color: widget.status.isConnected
                             ? AppColors.connected
                             : (widget.status.isConnecting

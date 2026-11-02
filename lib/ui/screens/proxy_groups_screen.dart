@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/proxy_group.dart';
 import '../../models/proxy_node.dart';
@@ -19,7 +20,7 @@ class ProxyGroupsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('PROXY GROUPS'),
+        title: Text(context.tr.proxyGroupsTitle.toUpperCase()),
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: AppColors.accent),
