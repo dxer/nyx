@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+class WindowClassRegistrar;
+
 class Win32Window {
  public:
   struct Point {
@@ -31,6 +33,11 @@ class Win32Window {
   void SetQuitOnClose(bool quit_on_close);
   RECT GetClientArea() const;
 
+  static LRESULT CALLBACK WndProc(HWND const window,
+                                  UINT const message,
+                                  WPARAM const wparam,
+                                  LPARAM const lparam) noexcept;
+
  protected:
   virtual LRESULT MessageHandler(HWND window,
                                  UINT const message,
@@ -41,11 +48,6 @@ class Win32Window {
 
  private:
   friend class WindowClassRegistrar;
-
-  static LRESULT CALLBACK WndProc(HWND const window,
-                                  UINT const message,
-                                  WPARAM const wparam,
-                                  LPARAM const lparam) noexcept;
 
   HWND window_handle_ = nullptr;
   bool quit_on_close_ = false;
